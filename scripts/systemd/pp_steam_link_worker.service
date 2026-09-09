@@ -1,0 +1,35 @@
+# PlayPilot steam_link —— 采集进程，不监听端口
+#
+# 只跑 api 的话接口能通，但游戏库、成就、时长永远不会更新 —— 采集全在这里。
+#
+# 安装（服务器上，root）：
+#   cp /opt/www/pp_steam_link.deploy/scripts/systemd/pp_steam_link_worker.service /etc/systemd/system/
+#   systemctl daemon-reload
+#   systemctl enable pp_steam_link_worker
+
+[Unit]
+Description=PlayPilot steam_link worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/www/pp_steam_link.deploy
+ExecStartPre=/bin/mkdir -p /opt/logs/pp_steam_link
+ExecStart=/opt/www/pp_steam_link.deploy/bin/pp_steam_link_worker
+
+Environment=APP_ENV=prod
+Environment=CONFIG_DIR=/opt/www/pp_steam_link.deploy/conf
+Environment=PLAYPILOT_CONFIG_DIR=/opt/playpilot/env
+
+# systemd < 240（如 CentOS 7）不支持 append:，见 api 单元里的说明。
+StandardOutput=append:/opt/logs/pp_steam_link/worker.log
+StandardError=append:/opt/logs/pp_steam_link/worker.log
+
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

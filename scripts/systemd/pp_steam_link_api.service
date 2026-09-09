@@ -1,0 +1,39 @@
+# PlayPilot steam_link —— HTTP 接口进程（:9994，只绑回环由 nginx/gateway 转发）
+#
+# 安装（服务器上，root）：
+#   cp /opt/www/pp_steam_link.deploy/scripts/systemd/pp_steam_link_api.service /etc/systemd/system/
+#   systemctl daemon-reload
+#   systemctl enable pp_steam_link_api
+#
+# 改完本文件必须 systemctl daemon-reload，否则 control.sh 重启的仍是旧定义。
+
+[Unit]
+Description=PlayPilot steam_link api
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/www/pp_steam_link.deploy
+ExecStartPre=/bin/mkdir -p /opt/logs/pp_steam_link
+ExecStart=/opt/www/pp_steam_link.deploy/bin/pp_steam_link_api
+
+# APP_ENV 决定读哪套 config.{env}.yaml 与 {env}.env；写错值服务会直接启动失败，
+# 不会带着一份本地配置连上生产。
+Environment=APP_ENV=prod
+Environment=CONFIG_DIR=/opt/www/pp_steam_link.deploy/conf
+Environment=PLAYPILOT_CONFIG_DIR=/opt/playpilot/env
+
+# 应用日志走 stdout（slog JSON），这里落盘到 /opt/logs。
+# systemd < 240（如 CentOS 7）不支持 append:，删掉这两行改用 journalctl -u 查看，
+# 或把 ExecStart 换成：/bin/sh -c 'exec .../bin/pp_steam_link_api >>/opt/logs/pp_steam_link/api.log 2>&1'
+StandardOutput=append:/opt/logs/pp_steam_link/api.log
+StandardError=append:/opt/logs/pp_steam_link/api.log
+
+Restart=always
+RestartSec=5
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
