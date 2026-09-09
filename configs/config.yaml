@@ -12,7 +12,15 @@ app:
   env: local
 
 http:
-  addr: ":9994"
+  # 默认绑回环：本服务不解析登录凭据，只读 Gateway 注入的 X-User-Id，
+  # 绕过 Gateway 直连即等同于绕过鉴权。
+  #
+  # 裸机 systemd 部署下这一行就是唯一的防线 —— 没有 Docker 端口发布那层兜底。
+  # 若改回容器部署，这里必须改成 ":9994"（容器内网卡地址不是回环，绑 127.0.0.1
+  # 会让容器完全不可达），改由 "127.0.0.1:9994:9994" 的端口发布把关。
+  #
+  # 需要让局域网设备访问本地开发实例时，用 STEAMLINK_HTTP_ADDR 临时覆盖，别改这里。
+  addr: "127.0.0.1:9994"
   # 站点根地址，派生出 OpenID 的两个参数：
   #   openid.realm     = {base_url}
   #   openid.return_to = {base_url}/noauth/steam/callback?state=...

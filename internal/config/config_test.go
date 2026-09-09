@@ -26,8 +26,9 @@ func TestLoad_MergesBaseAndEnvFiles(t *testing.T) {
 	cfg, err := Load(testConfigDir)
 	require.NoError(t, err)
 
-	// 来自基础配置
-	require.Equal(t, ":9994", cfg.HTTP.Addr)
+	// 来自基础配置。地址带回环前缀不是笔误：本服务只信任 Gateway 注入的
+	// X-User-Id，绑到全部网卡等于把鉴权敞开，见 configs/config.yaml 的说明。
+	require.Equal(t, "127.0.0.1:9994", cfg.HTTP.Addr)
 	require.Equal(t, 3306, cfg.MySQL.Port)
 	require.Equal(t, 5, cfg.Steam.RatePerSec)
 	// 被 local 覆盖
